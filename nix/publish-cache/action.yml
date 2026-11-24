@@ -1,0 +1,27 @@
+name: Publish Nix Cache
+description: Publish Nix outputs or archive a flake to a binary cache using the installed Nix.
+inputs:
+  destination:
+    description: Writable Nix binary cache URL such as s3://bucket or file:///path/to/cache.
+    required: true
+  mode:
+    description: Use copy for build outputs or archive for a flake and its locked inputs.
+    default: copy
+  paths:
+    description: Newline-separated store paths or result links to publish in copy mode.
+  flake:
+    description: Flake reference to publish in archive mode.
+    default: '.'
+  signing-key:
+    description: Optional raw Nix binary-cache signing key.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: bash "$GITHUB_ACTION_PATH/publish-nix-cache.sh"
+      env:
+        NIX_CACHE_DESTINATION: ${{ inputs.destination }}
+        NIX_CACHE_MODE: ${{ inputs.mode }}
+        NIX_CACHE_PATHS: ${{ inputs.paths }}
+        NIX_CACHE_FLAKE: ${{ inputs.flake }}
+        NIX_CACHE_SIGNING_KEY: ${{ inputs.signing-key }}

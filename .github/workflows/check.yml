@@ -1,0 +1,34 @@
+name: Check
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: ./nix/setup
+      - run: nix flake check --print-build-logs --no-write-lock-file
+      - name: Add a test output
+        id: output
+        shell: bash
+        run: |
+          printf 'GitHub Actions cache smoke test\n' >"$RUNNER_TEMP/payload"
+          path=$(nix store add "$RUNNER_TEMP/payload")
+          printf 'path=%s\n' "$path" >>"$GITHUB_OUTPUT"
+      - uses: ./nix/publish-cache
+        with:
+          destination: file://${{ runner.temp }}/cache
+          paths: ${{ steps.output.outputs.path }}
+      - name: Check the published output
+        shell: bash
+        env:
+          OUTPUT_PATH: ${{ steps.output.outputs.path }}
+        run: nix store verify --store "file://$RUNNER_TEMP/cache" "$OUTPUT_PATH"

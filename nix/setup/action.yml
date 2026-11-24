@@ -1,0 +1,32 @@
+name: Setup Nix
+description: Install a checksummed Nix release or configure Nix already on the runner.
+inputs:
+  use-g7c-cache:
+    description: Add cache.g7c.us as a substituter with its public signing key.
+    default: 'true'
+  extra-nix-config:
+    description: Additional nix.conf settings. On a fresh daemon install these also apply to the daemon.
+  github-token:
+    description: Token for Nix fetches from github.com. Set to an empty string to skip authentication.
+    default: ${{ github.token }}
+  trust-runner:
+    description: Trust the runner account in a freshly installed daemon, granting root-equivalent access.
+    default: 'false'
+outputs:
+  version:
+    description: The version of Nix available to subsequent steps.
+    value: ${{ steps.setup.outputs.version }}
+  reused:
+    description: Whether Nix was already installed.
+    value: ${{ steps.setup.outputs.reused }}
+runs:
+  using: composite
+  steps:
+    - id: setup
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/setup-nix.sh"
+      env:
+        SETUP_NIX_USE_G7C_CACHE: ${{ inputs.use-g7c-cache }}
+        SETUP_NIX_EXTRA_CONFIG: ${{ inputs.extra-nix-config }}
+        SETUP_NIX_GITHUB_TOKEN: ${{ inputs.github-token }}
+        SETUP_NIX_TRUST_RUNNER: ${{ inputs.trust-runner }}

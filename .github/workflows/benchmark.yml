@@ -1,0 +1,38 @@
+name: Setup benchmark
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  setup:
+    name: ${{ matrix.runner }} / ${{ matrix.installer }} / sample ${{ matrix.sample }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-15]
+        installer: [cachix, candidate]
+        sample: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Baseline setup
+        if: matrix.installer == 'cachix'
+        uses: cachix/install-nix-action@bb0495a1086c46893eee56f32fd192dfe4a15bb9 # v32.0.0
+        with:
+          enable_kvm: false
+          extra_nix_config: max-jobs = 2
+      - name: Candidate setup
+        if: matrix.installer == 'candidate'
+        uses: ./nix/setup
+        with:
+          trust-runner: true
+          use-g7c-cache: false
+          extra-nix-config: max-jobs = 2
+      - name: Verify Nix
+        shell: bash
+        run: |
+          test "$(nix --version)" = 'nix (Nix) 2.36.0'
+          test "$(nix config show max-jobs)" = 2
+          test "$(nix eval --expr '1 + 1')" = 2
